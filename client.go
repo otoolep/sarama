@@ -165,6 +165,26 @@ func (client *Client) RefreshAllMetadata() error {
 	return client.refreshMetadata(make([]string, 0), client.config.MetadataRetries)
 }
 
+// GetCurrentOffset queries the cluster to get the most recent available offset  on the
+// topic/partition combination.
+func (client *Client) GetCurrentOffset(topic string, partitionID int32) (int64, error) {
+	broker, err := client.Leader(topic, partitionID)
+	if err != nil {
+		return -1, err
+	}
+
+	req := &OffsetRequest{}
+	req.AddBlock(topic, partitionID, LatestOffsets, 1)
+
+	resp, err := broker.GetAvailableOffsets(client.id, req)
+	if err != nil {
+		return -1, err
+	}
+
+	blk := resp.GetBlock(topic, partitionID)
+	return blk.Offsets[0] - 1, nil
+}
+
 // misc private helper functions
 
 // XXX: see https://github.com/Shopify/sarama/issues/15
