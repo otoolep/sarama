@@ -165,24 +165,31 @@ func (client *Client) RefreshAllMetadata() error {
 	return client.refreshMetadata(make([]string, 0), client.config.MetadataRetries)
 }
 
-// GetCurrentOffset queries the cluster to get the most recent available offset  on the
-// topic/partition combination.
-func (client *Client) GetCurrentOffset(topic string, partitionID int32) (int64, error) {
+// GetOffset queries the cluster to get the most recent available offset at a given
+// time on the topic/partition combination.
+func (client *Client) GetOffset(topic string, partitionID int32, where OffsetTime) (int64, error) {
 	broker, err := client.Leader(topic, partitionID)
 	if err != nil {
 		return -1, err
 	}
 
-	req := &OffsetRequest{}
-	req.AddBlock(topic, partitionID, LatestOffsets, 1)
+	request := &OffsetRequest{}
+	request.AddBlock(topic, partitionID, where, 1)
 
-	resp, err := broker.GetAvailableOffsets(client.id, req)
+	response, err := broker.GetAvailableOffsets(client.id, request)
 	if err != nil {
 		return -1, err
 	}
 
-	blk := resp.GetBlock(topic, partitionID)
-	return blk.Offsets[0] - 1, nil
+	block := response.GetBlock(topic, partitionID)
+	if block == nil || len(block.Offsets) < 1 {
+		return -1, IncompleteResponse
+	}
+	if block.Err != NoError {
+		return -1, block.Err
+	}
+
+	return block.Offsets[0], nil
 }
 
 // misc private helper functions
