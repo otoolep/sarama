@@ -273,7 +273,6 @@ func (c *Consumer) getOffset(where OffsetTime, retry bool) (int64, error) {
 
 	switch err {
 	case nil:
-		return offset, nil
 	case EncodingError:
 		return -1, err
 	default:
@@ -294,10 +293,10 @@ func (c *Consumer) getOffset(where OffsetTime, retry bool) (int64, error) {
 				c.client.disconnectBroker(c.broker)
 			}
 			return c.getOffset(where, false)
-		default:
-			return -1, err
 		}
+		return -1, err
 	}
+	return offset, nil
 }
 
 // Creates a ConsumerConfig instance with sane defaults.

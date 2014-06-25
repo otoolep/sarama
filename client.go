@@ -182,11 +182,11 @@ func (client *Client) GetOffset(topic string, partitionID int32, where OffsetTim
 	}
 
 	block := response.GetBlock(topic, partitionID)
-	if block == nil || len(block.Offsets) < 1 {
-		return -1, IncompleteResponse
-	}
-	if block.Err != NoError {
+	if block != nil && block.Err != NoError {
 		return -1, block.Err
+	}
+	if block == nil || len(block.Offsets) != 1 {
+		return -1, IncompleteResponse
 	}
 
 	return block.Offsets[0], nil
